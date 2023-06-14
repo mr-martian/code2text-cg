@@ -36,7 +36,7 @@ base_rules = [
     (rule_target (_) @target)
     [(contexttest) @test_list "(" ")"]*
   ) @root
-  (#match? @type "^SELECT$")
+  (#eq? @type "SELECT")
 )
 ''',
         'output': [
@@ -64,7 +64,7 @@ base_rules = [
     (rule_target (_) @target)
     [(contexttest) @test_list "(" ")"]*
   ) @root
-  (#match? @type "^REMOVE$")
+  (#eq? @type "REMOVE")
 )
 ''',
         'output': [
@@ -112,7 +112,7 @@ base_rules = [
     (eq)
     (taglist (tag)* @delim_list)
   ) @root
-  (#match? @name "^DELIMITERS$")
+  (#eq? @name "DELIMITERS")
 )''',
         'output': [
             {

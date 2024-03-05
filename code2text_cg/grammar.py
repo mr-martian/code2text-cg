@@ -126,7 +126,7 @@ base_rules = [
         ],
     },
     {
-        'pattern': '(taglist (tag)+ @tag_list) @root',
+        'pattern': '(taglist (tag) @tag_list) @root',
         'output': [{
             'lists': {'tag_list': {'join': ', '}},
             'output': 'tags {tag_list}',
@@ -137,14 +137,14 @@ base_rules = [
         'output': '{tags}',
     },
     {
-        'pattern': '(compotag "(" (tag)+ @tag_list ")") @root',
+        'pattern': '(compotag "(" (tag) @tag_list ")") @root',
         'output': [{
             'lists': {'tag_list': {'join': ' and '}},
             'output': '({tag_list})',
         }],
     },
     {
-        'pattern': '(list (setname) @name_text (taglist [(tag) (compotag)]+ @tag_list)) @root',
+        'pattern': '(list (setname) @name_text (taglist [(tag) (compotag)] @tag_list)) @root',
         'output': [{
             'lists': {'tag_list': {'join': ' or '}},
             'output': 'Define the set {name_text} as matching {tag_list}.',

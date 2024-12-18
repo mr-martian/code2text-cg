@@ -311,6 +311,41 @@ base_rules = [
     ########################################
     {
         'pattern': '''
+        ([(TO) (FROM)] .
+        (contexttest
+          modifier: [
+            (context_modifier) @all
+            (context_modifier) @none
+            (context_modifier) @not
+            (context_modifier) @negate
+          ]*
+          (#eq? @all "ALL")
+          (#eq? @none "NONE")
+          (#eq? @not "NOT")
+          (#eq? @negate "NEGATE")
+          (contextpos) @ctx
+          set: (_) @set
+          barrier: (inlineset)? @barrier
+          link: (contexttest)? @link
+        ) @root
+        )
+        ''',
+        'output': multi_option(
+            ('negate', 'it is not the case that '),
+            ('all', 'every reading '),
+            ('none', 'no reading '),
+            ((['all', 'none'], False), 'some reading '),
+            (None, '{ctx} '),
+            ('barrier', '(stop looking if you reach one {barrier}) '),
+            (None, 'which must '),
+            ('not', 'not '),
+            (None, 'be one {set}'),
+            ('link', ' and, relative to that, {link}'),
+            cap=False,
+        ),
+    },
+    {
+        'pattern': '''
         (contexttest
           modifier: [
             (context_modifier) @all
@@ -330,9 +365,9 @@ base_rules = [
         ''',
         'output': multi_option(
             ('negate', 'it is not the case that '),
-            ('all', 'every '),
-            ('none', 'no '),
-            ((['all', 'none'], False), 'some '),
+            ('all', 'every reading '),
+            ('none', 'no reading '),
+            ((['all', 'none'], False), 'some reading '),
             (None, '{ctx} '),
             ('barrier', '(stop looking if you reach one {barrier}) '),
             (None, 'is '),
@@ -343,45 +378,54 @@ base_rules = [
         ),
     },
     {
-        'pattern': '(contextpos . (ctx_parent) .) @root',
-        'output': 'parent',
+        'pattern': '(ctx_parent) @root',
+        'output': 'in the parent cohort',
     },
     {
-        'pattern': '(contextpos . (ctx_sibling) .) @root',
-        'output': 'sibling',
+        'pattern': '(ctx_sibling) @root',
+        'output': 'in a sibling cohort',
     },
     {
-        'pattern': '(contextpos . (ctx_child) .) @root',
-        'output': 'child',
+        'pattern': '(ctx_child) @root',
+        'output': 'in a child cohort',
+    },
+    *[
+        {
+            'pattern': '((ctx_jump_context) @root (#eq? @root "jC%d"))' % i,
+            'output': 'in the cohort found by context test %d in the containing WITH rule' % i,
+        } for i in range(1, 10)
+    ],
+    {
+        'pattern': '''
+        (contextpos
+          [(ctx_negative) @neg (ctx_scan_first) @star]*
+          (ctx_number) @root_text
+          [(ctx_negative) @neg (ctx_scan_first) @star]*
+        )
+        ''',
+        'output': multi_option(
+            (None, 'in the cohort {root_text} positions to the '),
+            ('neg', 'left'),
+            (('neg', False), 'right'),
+            ('star', ' or further in that direction'),
+            cap=False,
+        ),
     },
     {
-        'pattern': '(contextpos) @root_text',
-        'output': 'word at position {root_text}',
+        'pattern': '((ctx_number) [(ctx_negative) (ctx_scan_first)] @root)',
+        'output': '',
     },
-    ########################################
-    ## Set Operators
-    ########################################
     {
-        'pattern': '(inlineset [(inlineset_single) @child_list (set_op)]*) @root',
+        'pattern': '([(ctx_negative) (ctx_scan_first)] @root (ctx_number))',
+        'output': '',
+    },
+    {
+        'pattern': '(contextpos (_)* @stuff_list) @root',
         'output': [{
-            'lists': {'child_list': {'join': ' '}},
-            'output': '{child_list}',
+            'output': '{stuff_list}',
+            'lists': {'stuff_list': {'join': ' '}},
         }],
     },
-    {
-        'pattern': '(inlineset . (inlineset_single (setname) @name) @root)',
-        'output': 'which matches {name}',
-    },
-    {
-        'pattern': '(inlineset . (inlineset_single (taglist) @tags) @root)',
-        'output': 'which has {tags}',
-    },
-    set_op_set('(#match? @op "^([oO][rR]|[|])$")', 'or matches {name}'),
-    set_op_tag('(#match? @op "^([oO][rR]|[|])$")', 'or has {tags}'),
-    set_op_set('(#eq? @op "+")', 'and matches {name}'),
-    set_op_tag('(#eq? @op "+")', 'and has {tags}'),
-    set_op_set('(#eq? @op "-")', 'and does not match {name}'),
-    set_op_tag('(#eq? @op "-")', 'and does not have {tags}'),
     ########################################
     ## Sets and Tags
     ########################################
@@ -392,7 +436,7 @@ base_rules = [
           (#eq? @t "*")
         ) @root))
         ''',
-        'output': 'the target of the containing WITH rule',
+        'output': 'which is the target of the containing WITH rule',
     },
     {
         'pattern': '''(rule_target
@@ -410,7 +454,7 @@ base_rules = [
         'pattern': '''(inlineset
           (inlineset_single . (taglist (tag) @t (#eq? @t "*")) .)
         ) @root''',
-        'output': 'any word',
+        'output': 'which can be any word',
     },
     *[
         {
@@ -477,6 +521,30 @@ base_rules = [
         'pattern': '(setname) @root_text',
         'output': 'the set {root_text}',
     },
+    ########################################
+    ## Set Operators
+    ########################################
+    {
+        'pattern': '(inlineset [(inlineset_single) @child_list (set_op)]*) @root',
+        'output': [{
+            'lists': {'child_list': {'join': ' '}},
+            'output': '{child_list}',
+        }],
+    },
+    {
+        'pattern': '(inlineset . (inlineset_single (setname) @name) @root)',
+        'output': 'which matches {name}',
+    },
+    {
+        'pattern': '(inlineset . (inlineset_single (taglist) @tags) @root)',
+        'output': 'which has {tags}',
+    },
+    set_op_set('(#match? @op "^([oO][rR]|[|])$")', 'or matches {name}'),
+    set_op_tag('(#match? @op "^([oO][rR]|[|])$")', 'or has {tags}'),
+    set_op_set('(#eq? @op "+")', 'and matches {name}'),
+    set_op_tag('(#eq? @op "+")', 'and has {tags}'),
+    set_op_set('(#eq? @op "-")', 'and does not match {name}'),
+    set_op_tag('(#eq? @op "-")', 'and does not have {tags}'),
 ]
 
 rules = [Pattern.from_json(CG, rl) for rl in base_rules]

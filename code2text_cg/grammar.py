@@ -433,8 +433,9 @@ base_rules = [
         'pattern': '''
         (rule_with (_ (rule_target
           (inlineset . (inlineset_single (taglist . (tag) @t .)) .)
+          @root
           (#eq? @t "*")
-        ) @root))
+        )))
         ''',
         'output': 'which is the target of the containing WITH rule',
     },
@@ -486,14 +487,6 @@ base_rules = [
     {
         'pattern': '''(taglist . (tag) @tg .) @root''',
         'output': 'the tag {tg}',
-    },
-    {
-        'pattern': '''(inlineset
-          . (inlineset_single . (taglist (tag)+ @t_list) .) .) @root''',
-        'output': [{
-            'lists': {'t_list': {'join': ', '}},
-            'output': 'the tags {t_list}',
-        }],
     },
     {
         'pattern': '(compotag "(" (tag)* @tag_list ")") @root',
